@@ -3,8 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <title>Hello</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .calculator {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            width: 300px;
+        }
+        .calculator h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+        .display {
+            background: #2d3436;
+            color: #00ff00;
+            font-size: 2em;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: right;
+            margin-bottom: 20px;
+            font-weight: bold;
+            min-height: 30px;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        button {
+            padding: 15px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .number, .operator {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+        .number:hover, .operator:hover {
+            background: #d5dbdb;
+        }
+        .operator {
+            background: #3498db;
+            color: white;
+        }
+        .operator:hover {
+            background: #2980b9;
+        }
+        .equals {
+            background: #27ae60;
+            color: white;
+            grid-column: span 2;
+        }
+        .equals:hover {
+            background: #229954;
+        }
+        .clear {
+            background: #e74c3c;
+            color: white;
+            grid-column: span 2;
+        }
+        .clear:hover {
+            background: #c0392b;
+        }
+    </style>
 </head>
 <body>
+    <div class="calculator">
+        <h2>Calculator</h2>
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button class="operator" onclick="appendOperator('/')">/</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
+            
+            <button class="number" onclick="appendNumber('7')">7</button>
+            <button class="number" onclick="appendNumber('8')">8</button>
+            <button class="number" onclick="appendNumber('9')">9</button>
+            <button class="operator" onclick="appendOperator('-')">-</button>
+            
+            <button class="number" onclick="appendNumber('4')">4</button>
+            <button class="number" onclick="appendNumber('5')">5</button>
+            <button class="number" onclick="appendNumber('6')">6</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
+            
+            <button class="number" onclick="appendNumber('1')">1</button>
+            <button class="number" onclick="appendNumber('2')">2</button>
+            <button class="number" onclick="appendNumber('3')">3</button>
+            <button class="operator" onclick="appendOperator('.')">.</button>
+            
+            <button class="number" onclick="appendNumber('0')" style="grid-column: span 2;">0</button>
+            <button class="equals" onclick="calculate()">=</button>
+        </div>
+    </div>
+    <h2>Additional code added by Harish</h2>
 
+    <script>
+        let display = document.getElementById('display');
+        let currentInput = '0';
+        let previousValue = null;
+        let operation = null;
+        let shouldResetDisplay = false;
+
+        function appendNumber(num) {
+            if (shouldResetDisplay) {
+                currentInput = num;
+                shouldResetDisplay = false;
+            } else {
+                if (currentInput === '0' && num !== '.') {
+                    currentInput = num;
+                } else if (num === '.' && currentInput.includes('.')) {
+                    return;
+                } else {
+                    currentInput += num;
+                }
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            if (operation !== null && !shouldResetDisplay) {
+                calculate();
+            }
+            previousValue = currentInput;
+            operation = op;
+            shouldResetDisplay = true;
+        }
+
+        function calculate() {
+            if (operation === null || shouldResetDisplay) {
+                return;
+            }
+
+            let result;
+            const prev = parseFloat(previousValue);
+            const current = parseFloat(currentInput);
+
+            switch(operation) {
+                case '+':
+                    result = prev + current;
+                    break;
+                case '-':
+                    result = prev - current;
+                    break;
+                case '*':
+                    result = prev * current;
+                    break;
+                case '/':
+                    result = prev / current;
+                    break;
+                case '.':
+                    return;
+                default:
+                    return;
+            }
+
+            currentInput = result.toString();
+            operation = null;
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            currentInput = '0';
+            previousValue = null;
+            operation = null;
+            shouldResetDisplay = false;
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            display.textContent = currentInput;
+        }
+    </script>
 </body>
 </html>
