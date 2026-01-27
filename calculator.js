@@ -1,16 +1,16 @@
-// Expression evaluator for calculator
+// Expression evaluator for calculator using AST
 
 const MAX_INPUT_LENGTH = 4096;
 
 /**
- * Main entry: validates, tokenizes, parses, and evaluates the expression.
+ * Main entry: validates, tokenizes, parses to AST, and evaluates the expression.
  */
 export function evaluateExpression(expression) {
     validateInput(expression);
     const tokens = tokenize(expression);
     validateTokenSequence(tokens);
-    const rpn = toRPN(tokens);
-    return evalRPN(rpn);
+    const ast = parseAST(tokens);
+    return evalAST(ast);
 }
 
 /**
@@ -98,85 +98,106 @@ function validateTokenSequence(tokens) {
 }
 
 /**
- * Converts tokens to Reverse Polish Notation (RPN) using the Shunting Yard algorithm.
- * Handles operator precedence and parentheses.
- * Precedence: * and / > + and -
- * Parentheses are pushed/popped to control precedence.
+ * AST node types:
+ * - { type: 'number', value: number }
+ * - { type: 'unary', op: '-', arg: AST }
+ * - { type: 'binary', op: '+', left: AST, right: AST }
  */
-export function toRPN(tokens) {
-    const output = [];
-    const ops = [];
-    const precedence = { '+': 1, '-': 1, '*': 2, '/': 2 };
-    const associativity = { '+': 'L', '-': 'L', '*': 'L', '/': 'L' };
+function parseAST(tokens) {
+    let pos = 0;
 
-    for (const token of tokens) {
-        if (token.type === 'number') {
-            output.push(token);
-        } else if (token.type === 'operator') {
-            if (token.value === '(') {
-                ops.push(token);
-            } else if (token.value === ')') {
-                // Pop operators until matching '('
-                while (ops.length && ops[ops.length - 1].value !== '(') {
-                    output.push(ops.pop());
-                }
-                if (!ops.length) throw new Error('Mismatched parentheses: missing opening (');
-                ops.pop(); // Remove '('
-            } else {
-                // Pop higher/equal precedence operators (left-associative)
-                while (
-                    ops.length &&
-                    ops[ops.length - 1].type === 'operator' &&
-                    ops[ops.length - 1].value !== '(' &&
-                    (
-                        precedence[ops[ops.length - 1].value] > precedence[token.value] ||
-                        (precedence[ops[ops.length - 1].value] === precedence[token.value] && associativity[token.value] === 'L')
-                    )
-                ) {
-                    output.push(ops.pop());
-                }
-                ops.push(token);
-            }
+    function peek() {
+        return tokens[pos];
+    }
+    function consume() {
+        return tokens[pos++];
+    }
+
+    // Parse with precedence: lowest (add/sub) to highest (unary, parens)
+    function parseExpression() {
+        return parseAddSub();
+    }
+
+    function parseAddSub() {
+        let node = parseMulDiv();
+        while (peek() && peek().type === 'operator' && (peek().value === '+' || peek().value === '-')) {
+            const op = consume().value;
+            const right = parseMulDiv();
+            node = { type: 'binary', op, left: node, right };
         }
+        return node;
     }
-    // Pop any remaining operators
-    while (ops.length) {
-        if (ops[ops.length - 1].value === '(' || ops[ops.length - 1].value === ')')
-            throw new Error('Mismatched parentheses: missing closing )');
-        output.push(ops.pop());
+
+    function parseMulDiv() {
+        let node = parseUnary();
+        while (peek() && peek().type === 'operator' && (peek().value === '*' || peek().value === '/')) {
+            const op = consume().value;
+            const right = parseUnary();
+            node = { type: 'binary', op, left: node, right };
+        }
+        return node;
     }
-    return output;
+
+    function parseUnary() {
+        if (peek() && peek().type === 'operator' && peek().value === '-') {
+            consume();
+            const arg = parseUnary();
+            return { type: 'unary', op: '-', arg };
+        }
+        return parsePrimary();
+    }
+
+    function parsePrimary() {
+        const token = peek();
+        if (!token) throw new Error('Invalid expression');
+        if (token.type === 'number') {
+            consume();
+            return { type: 'number', value: token.value };
+        }
+        if (token.type === 'operator' && token.value === '(') {
+            consume();
+            const expr = parseExpression();
+            if (!peek() || peek().type !== 'operator' || peek().value !== ')') {
+                throw new Error('Mismatched parentheses: missing closing )');
+            }
+            consume();
+            return expr;
+        }
+        throw new Error('Invalid expression');
+    }
+
+    const ast = parseExpression();
+    if (pos !== tokens.length) throw new Error('Invalid expression');
+    return ast;
 }
 
 /**
- * Evaluates an RPN token array and returns the result.
+ * Recursively evaluates the AST.
  * Throws on division by zero and malformed expressions.
  */
-export function evalRPN(rpn) {
-    const stack = [];
-    for (const token of rpn) {
-        if (token.type === 'number') {
-            stack.push(token.value);
-        } else if (token.type === 'operator') {
-            if (stack.length < 2) throw new Error('Invalid expression');
-            const b = stack.pop();
-            const a = stack.pop();
-            let result;
-            switch (token.value) {
-                case '+': result = a + b; break;
-                case '-': result = a - b; break;
-                case '*': result = a * b; break;
+export function evalAST(node) {
+    switch (node.type) {
+        case 'number':
+            return node.value;
+        case 'unary':
+            if (node.op === '-') return -evalAST(node.arg);
+            throw new Error('Unknown unary operator: ' + node.op);
+        case 'binary': {
+            const left = evalAST(node.left);
+            const right = evalAST(node.right);
+            switch (node.op) {
+                case '+': return left + right;
+                case '-': return left - right;
+                case '*': return left * right;
                 case '/':
-                    if (b === 0) throw new Error('Division by zero');
-                    result = a / b;
-                    break;
-                default: throw new Error('Unknown operator: ' + token.value);
+                    if (right === 0) throw new Error('Division by zero');
+                    return left / right;
+                default: throw new Error('Unknown operator: ' + node.op);
             }
-            stack.push(result);
         }
+        default:
+            throw new Error('Invalid expression');
     }
-    if (stack.length !== 1) throw new Error('Invalid expression');
-    return stack[0];
 }
 
 /**
