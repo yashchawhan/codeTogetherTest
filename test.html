@@ -191,5 +191,55 @@
             display.textContent = currentInput;
         }
     </script>
+
+    <!-- Add below the existing calculator div -->
+    <div class="calculator" style="margin-top: 30px;">
+        <h2>Expression Evaluator</h2>
+        <input id="expr-input" type="text" placeholder="Enter expression" style="width: 100%; font-size: 1.1em; margin-bottom: 10px;">
+        <button id="eval-btn" style="width: 100%; margin-bottom: 10px;">Evaluate</button>
+        <div id="expr-result" class="display" style="margin-bottom: 10px; min-height: 2em;">Result: </div>
+        <div>
+            <strong>History</strong>
+            <ul id="history-list" style="padding-left: 20px; max-height: 150px; overflow-y: auto;"></ul>
+        </div>
+    </div>
+
+    <script type="module">
+        import { evaluateExpression } from './calculator.js';
+
+        const input = document.getElementById('expr-input');
+        const btn = document.getElementById('eval-btn');
+        const result = document.getElementById('expr-result');
+        const historyList = document.getElementById('history-list');
+        let history = [];
+
+        btn.addEventListener('click', () => {
+            const expr = input.value.trim();
+            if (!expr) return;
+            try {
+                const val = evaluateExpression(expr);
+                result.textContent = 'Result: ' + val;
+                addToHistory(expr, val);
+            } catch (e) {
+                result.textContent = 'Error: ' + e.message;
+                addToHistory(expr, 'Error');
+            }
+        });
+
+        function addToHistory(expr, val) {
+            history.unshift({ expr, val });
+            if (history.length > 10) history.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyList.innerHTML = '';
+            for (const item of history) {
+                const li = document.createElement('li');
+                li.textContent = `${item.expr} = ${item.val}`;
+                historyList.appendChild(li);
+            }
+        }
+    </script>
 </body>
 </html>

@@ -347,3 +347,66 @@ describe('Calculator Functions', () => {
         });
     });
 });
+
+const { evaluateExpression } = require('./calculator');
+
+describe('evaluateExpression', () => {
+    // Basic operations and whitespace
+    it('evaluates addition', () => {
+        expect(evaluateExpression('1 + 2')).toBe(3);
+    });
+    it('evaluates subtraction', () => {
+        expect(evaluateExpression('5 - 2')).toBe(3);
+    });
+    it('evaluates multiplication', () => {
+        expect(evaluateExpression('3 * 4')).toBe(12);
+    });
+    it('evaluates division', () => {
+        expect(evaluateExpression('8 / 2')).toBe(4);
+    });
+    it('handles whitespace', () => {
+        expect(evaluateExpression('  7   * 2 ')).toBe(14);
+    });
+
+    // Precedence
+    it('respects operator precedence', () => {
+        expect(evaluateExpression('1 + 2 * 3')).toBe(7);
+    });
+
+    // Parentheses
+    it('handles parentheses', () => {
+        expect(evaluateExpression('(1 + 2) * 3')).toBe(9);
+    });
+
+    // Decimals
+    it('handles decimals', () => {
+        expect(evaluateExpression('0.5 + 1.25')).toBe(1.75);
+    });
+
+    // Unary minus
+    it('handles unary minus at start', () => {
+        expect(evaluateExpression('-5 + 2')).toBe(-3);
+    });
+    it('handles unary minus with parentheses', () => {
+        expect(evaluateExpression('-(2 + 3)')).toBe(-5);
+    });
+
+    // Division by zero throws
+    it('throws on division by zero', () => {
+        expect(() => evaluateExpression('5 / 0')).toThrow('Division by zero');
+    });
+
+    // Invalid expressions throw
+    it('throws on invalid expression (mismatched parentheses)', () => {
+        expect(() => evaluateExpression('(1 + 2')).toThrow();
+    });
+    it('throws on invalid characters', () => {
+        expect(() => evaluateExpression('2 + a')).toThrow();
+    });
+    it('throws on invalid number format', () => {
+        expect(() => evaluateExpression('1..2 + 3')).toThrow();
+    });
+    it('throws on empty input', () => {
+        expect(() => evaluateExpression('')).toThrow();
+    });
+});
