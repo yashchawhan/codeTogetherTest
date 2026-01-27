@@ -196,11 +196,12 @@
     <div class="calculator" style="margin-top: 30px;">
         <h2>Expression Evaluator</h2>
         <input id="expr-input" type="text" placeholder="Enter expression" style="width: 100%; font-size: 1.1em; margin-bottom: 10px;">
-        <button id="eval-btn" style="width: 100%; margin-bottom: 10px;">Evaluate</button>
-        <div id="expr-result" class="display" style="margin-bottom: 10px; min-height: 2em;">Result: </div>
+        <button id="eval-btn" style="width: 49%; margin-bottom: 10px;">Evaluate</button>
+        <button id="clear-btn" style="width: 49%; margin-bottom: 10px;">Clear</button>
+        <div id="expr-result" class="display" style="margin-bottom: 10px; min-height: 2em; color: #00ff00;">Result: </div>
         <div>
             <strong>History</strong>
-            <ul id="history-list" style="padding-left: 20px; max-height: 150px; overflow-y: auto;"></ul>
+            <ul id="history-list" style="padding-left: 20px; max-height: 150px; overflow-y: auto; cursor: pointer;"></ul>
         </div>
     </div>
 
@@ -209,21 +210,40 @@
 
         const input = document.getElementById('expr-input');
         const btn = document.getElementById('eval-btn');
+        const clearBtn = document.getElementById('clear-btn');
         const result = document.getElementById('expr-result');
         const historyList = document.getElementById('history-list');
         let history = [];
 
-        btn.addEventListener('click', () => {
+        function evaluateAndDisplay() {
             const expr = input.value.trim();
             if (!expr) return;
             try {
                 const val = evaluateExpression(expr);
                 result.textContent = 'Result: ' + val;
+                result.style.color = '#00ff00';
                 addToHistory(expr, val);
             } catch (e) {
                 result.textContent = 'Error: ' + e.message;
+                result.style.color = '#ff4444';
                 addToHistory(expr, 'Error');
             }
+        }
+
+        btn.addEventListener('click', evaluateAndDisplay);
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                evaluateAndDisplay();
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            result.textContent = 'Result: ';
+            result.style.color = '#00ff00';
+            history = [];
+            renderHistory();
         });
 
         function addToHistory(expr, val) {
@@ -237,6 +257,11 @@
             for (const item of history) {
                 const li = document.createElement('li');
                 li.textContent = `${item.expr} = ${item.val}`;
+                li.style.cursor = 'pointer';
+                li.addEventListener('click', () => {
+                    input.value = item.expr;
+                    input.focus();
+                });
                 historyList.appendChild(li);
             }
         }
