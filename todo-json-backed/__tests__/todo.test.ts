@@ -16,4 +16,20 @@ describe('TodoService', () => {
         const todos = await service.getTodos()
         expect(todos.length).toBeGreaterThan(0)
     })
+
+    it('add todo should add a new todo', async () => {
+        const initialTodos = await service.getTodos()
+        const newTodoTitle = 'Test Todo'
+
+        const added = await service.addTodo(newTodoTitle)
+        expect(added.title).toBe(newTodoTitle)
+
+        const todos = await service.getTodos()
+        expect(todos.find(t => t.id === added.id)).toBeDefined()
+
+        await service.removeTodo(added.id)
+
+        const finalTodos = await service.getTodos()
+        expect(finalTodos.length).toBe(initialTodos.length)
+    })
 })
