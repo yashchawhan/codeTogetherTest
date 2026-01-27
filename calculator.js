@@ -2,6 +2,9 @@
 
 const MAX_INPUT_LENGTH = 4096;
 
+/**
+ * Main entry: validates, tokenizes, parses, and evaluates the expression.
+ */
 export function evaluateExpression(expression) {
     validateInput(expression);
     const tokens = tokenize(expression);
@@ -10,7 +13,9 @@ export function evaluateExpression(expression) {
     return evalRPN(rpn);
 }
 
-// Validate the raw input string
+/**
+ * Validates the raw input string for type, emptiness, and length.
+ */
 function validateInput(expr) {
     if (typeof expr !== 'string') throw new Error('Expression must be a string');
     if (expr.length === 0 || expr.trim().length === 0) {
@@ -21,8 +26,11 @@ function validateInput(expr) {
     }
 }
 
-// Tokenize the input string into numbers, operators, and parentheses
-function tokenize(expr) {
+/**
+ * Converts the input string into an array of tokens (numbers, operators, parentheses).
+ * Handles tricky cases like malformed decimals and unary minus.
+ */
+export function tokenize(expr) {
     const tokens = [];
     let i = 0;
     while (i < expr.length) {
@@ -40,7 +48,7 @@ function tokenize(expr) {
             if (!/^(\d+(\.\d*)?|\.\d+)$/.test(num)) throw new Error('Malformed decimal number');
             tokens.push({ type: 'number', value: parseFloat(num) });
         } else if ('+-*/()'.includes(c)) {
-            // Handle unary minus
+            // Handle unary minus: if '-' is at the start or after an operator or '('
             if (c === '-' && (tokens.length === 0 || (tokens[tokens.length - 1].type !== 'number' && tokens[tokens.length - 1].value !== ')'))) {
                 let num = '-';
                 i++;
@@ -65,13 +73,16 @@ function tokenize(expr) {
     return tokens;
 }
 
-// Validate token sequence for invalid operator/operator and other malformed patterns
+/**
+ * Checks for invalid operator sequences and mismatched parentheses.
+ */
 function validateTokenSequence(tokens) {
     let last = null;
     let parenBalance = 0;
     for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i];
         if (t.type === 'operator') {
+            // Disallow sequences like ++, **, //, etc.
             if ('+-*/'.includes(t.value) && last && last.type === 'operator' && '+-*/'.includes(last.value)) {
                 throw new Error(`Invalid operator sequence: "${last.value}${t.value}"`);
             }
@@ -84,8 +95,11 @@ function validateTokenSequence(tokens) {
     if (parenBalance > 0) throw new Error('Mismatched parentheses: too many opening (');
 }
 
-// Convert tokens to Reverse Polish Notation (Shunting Yard algorithm)
-function toRPN(tokens) {
+/**
+ * Converts tokens to Reverse Polish Notation (RPN) using the Shunting Yard algorithm.
+ * Handles operator precedence and parentheses.
+ */
+export function toRPN(tokens) {
     const output = [];
     const ops = [];
     const precedence = { '+': 1, '-': 1, '*': 2, '/': 2 };
@@ -98,12 +112,14 @@ function toRPN(tokens) {
             if (token.value === '(') {
                 ops.push(token);
             } else if (token.value === ')') {
+                // Pop operators until matching '('
                 while (ops.length && ops[ops.length - 1].value !== '(') {
                     output.push(ops.pop());
                 }
                 if (!ops.length) throw new Error('Mismatched parentheses: missing opening (');
                 ops.pop(); // Remove '('
             } else {
+                // Pop higher/equal precedence operators (left-associative)
                 while (
                     ops.length &&
                     ops[ops.length - 1].type === 'operator' &&
@@ -119,6 +135,7 @@ function toRPN(tokens) {
             }
         }
     }
+    // Pop any remaining operators
     while (ops.length) {
         if (ops[ops.length - 1].value === '(' || ops[ops.length - 1].value === ')')
             throw new Error('Mismatched parentheses: missing closing )');
@@ -153,4 +170,28 @@ function evalRPN(rpn) {
     }
     if (stack.length !== 1) throw new Error('Invalid expression');
     return stack[0];
+}
+
+/**
+ * Formats a numeric result:
+ * - Rounds to maxDecimals (default 6)
+ * - Trims trailing zeros
+ * - Returns integers without decimal
+ * - Avoids scientific notation for typical values
+ */
+export function formatResult(value, options = {}) {
+    const maxDecimals = options.maxDecimals ?? 6;
+    if (typeof value !== 'number' || !isFinite(value)) return String(value);
+
+    // Avoid scientific notation for typical values
+    let rounded = Number(Math.round(value * Math.pow(10, maxDecimals)) / Math.pow(10, maxDecimals));
+    let str = rounded.toFixed(maxDecimals);
+
+    // Trim trailing zeros and possible trailing decimal point
+    str = str.replace(/\.?0+$/, '');
+
+    // If the result is -0, return "0"
+    if (str === '-0') str = '0';
+
+    return str;
 }
