@@ -7,9 +7,19 @@ const MAX_INPUT_LENGTH = 4096;
  */
 export function evaluateExpression(expression) {
     validateInput(expression);
-    const tokens = tokenize(expression);
-    validateTokenSequence(tokens);
-    const ast = parseAST(tokens);
+    let tokens;
+    try {
+        tokens = tokenize(expression);
+        validateTokenSequence(tokens);
+    } catch (e) {
+        throw parseError(e);
+    }
+    let ast;
+    try {
+        ast = parseAST(tokens);
+    } catch (e) {
+        throw parseError(e);
+    }
     return evalAST(ast);
 }
 
@@ -17,19 +27,18 @@ export function evaluateExpression(expression) {
  * Validates the raw input string for type, emptiness, and length.
  */
 function validateInput(expr) {
-    if (typeof expr !== 'string') throw new Error('Expression must be a string');
+    if (typeof expr !== 'string') throw parseError('Expression must be a string');
     if (expr.length === 0 || expr.trim().length === 0) {
-        throw new Error('Expression is empty');
+        throw parseError('Expression is empty');
     }
     if (expr.length > MAX_INPUT_LENGTH) {
-        throw new Error(`Expression exceeds maximum length of ${MAX_INPUT_LENGTH} characters`);
+        throw parseError(`Expression exceeds maximum length of ${MAX_INPUT_LENGTH} characters`);
     }
 }
 
 /**
  * Converts the input string into an array of tokens (numbers, operators, parentheses).
- * Handles tricky cases like malformed decimals and unary minus.
- * Unary minus is detected if '-' is at the start or after an operator or '('.
+ * Handles malformed decimals and defers unary minus to the parser for consistency.
  */
 export function tokenize(expr) {
     const tokens = [];
@@ -45,30 +54,14 @@ export function tokenize(expr) {
                 if (expr[i] === '.') dotCount++;
                 num += expr[i++];
             }
-            if (num === '.' || num === '..' || dotCount > 1) throw new Error('Malformed decimal number');
-            if (!/^(\d+(\.\d*)?|\.\d+)$/.test(num)) throw new Error('Malformed decimal number');
+            if (num === '.' || num === '..' || dotCount > 1) throw parseError('Malformed decimal number');
+            if (!/^(\d+(\.\d*)?|\.\d+)$/.test(num)) throw parseError('Malformed decimal number');
             tokens.push({ type: 'number', value: parseFloat(num) });
         } else if ('+-*/()'.includes(c)) {
-            // Handle unary minus: if '-' is at the start or after an operator or '('
-            if (c === '-' && (tokens.length === 0 || (tokens[tokens.length - 1].type !== 'number' && tokens[tokens.length - 1].value !== ')'))) {
-                let num = '-';
-                i++;
-                let dotCount = 0;
-                let hasDigit = false;
-                while (i < expr.length && /[0-9.]/.test(expr[i])) {
-                    if (expr[i] === '.') dotCount++;
-                    else hasDigit = true;
-                    num += expr[i++];
-                }
-                if (num === '-' || num === '-.' || num === '-..' || dotCount > 1 || !hasDigit) throw new Error('Malformed unary minus or decimal');
-                if (!/^-?(\d+(\.\d*)?|\.\d+)$/.test(num)) throw new Error('Malformed unary minus or decimal');
-                tokens.push({ type: 'number', value: parseFloat(num) });
-            } else {
-                tokens.push({ type: 'operator', value: c });
-                i++;
-            }
+            tokens.push({ type: 'operator', value: c });
+            i++;
         } else {
-            throw new Error('Invalid character: ' + c);
+            throw parseError('Invalid character: ' + c);
         }
     }
     return tokens;
@@ -86,15 +79,15 @@ function validateTokenSequence(tokens) {
         if (t.type === 'operator') {
             // Disallow sequences like ++, **, //, etc.
             if ('+-*/'.includes(t.value) && last && last.type === 'operator' && '+-*/'.includes(last.value)) {
-                throw new Error(`Invalid operator sequence: "${last.value}${t.value}"`);
+                throw parseError(`Invalid operator sequence: "${last.value}${t.value}"`);
             }
             if (t.value === '(') parenBalance++;
             if (t.value === ')') parenBalance--;
-            if (parenBalance < 0) throw new Error('Mismatched parentheses: too many closing )');
+            if (parenBalance < 0) throw parseError('Mismatched parentheses: too many closing )');
         }
         last = t;
     }
-    if (parenBalance > 0) throw new Error('Mismatched parentheses: too many opening (');
+    if (parenBalance > 0) throw parseError('Mismatched parentheses: too many opening (');
 }
 
 /**
@@ -138,6 +131,7 @@ function parseAST(tokens) {
         return node;
     }
 
+    // Handles unary minus for any valid subexpression (number, parenthesis, or another unary)
     function parseUnary() {
         if (peek() && peek().type === 'operator' && peek().value === '-') {
             consume();
@@ -149,7 +143,7 @@ function parseAST(tokens) {
 
     function parsePrimary() {
         const token = peek();
-        if (!token) throw new Error('Invalid expression');
+        if (!token) throw parseError('Invalid expression');
         if (token.type === 'number') {
             consume();
             return { type: 'number', value: token.value };
@@ -158,16 +152,16 @@ function parseAST(tokens) {
             consume();
             const expr = parseExpression();
             if (!peek() || peek().type !== 'operator' || peek().value !== ')') {
-                throw new Error('Mismatched parentheses: missing closing )');
+                throw parseError('Mismatched parentheses: missing closing )');
             }
             consume();
             return expr;
         }
-        throw new Error('Invalid expression');
+        throw parseError('Invalid expression');
     }
 
     const ast = parseExpression();
-    if (pos !== tokens.length) throw new Error('Invalid expression');
+    if (pos !== tokens.length) throw parseError('Invalid expression');
     return ast;
 }
 
@@ -181,7 +175,7 @@ export function evalAST(node) {
             return node.value;
         case 'unary':
             if (node.op === '-') return -evalAST(node.arg);
-            throw new Error('Unknown unary operator: ' + node.op);
+            throw parseError('Unknown unary operator: ' + node.op);
         case 'binary': {
             const left = evalAST(node.left);
             const right = evalAST(node.right);
@@ -190,13 +184,13 @@ export function evalAST(node) {
                 case '-': return left - right;
                 case '*': return left * right;
                 case '/':
-                    if (right === 0) throw new Error('Division by zero');
+                    if (right === 0) throw parseError('Division by zero');
                     return left / right;
-                default: throw new Error('Unknown operator: ' + node.op);
+                default: throw parseError('Unknown operator: ' + node.op);
             }
         }
         default:
-            throw new Error('Invalid expression');
+            throw parseError('Invalid expression');
     }
 }
 
@@ -223,3 +217,13 @@ export function formatResult(value, options = {}) {
 
     return str;
 }
+
+/**
+ * Centralized parse error creation for consistent error messages.
+ */
+function parseError(e) {
+    if (e instanceof Error) return e;
+    return new Error(typeof e === 'string' ? e : 'Invalid expression');
+}
+
+module.exports = { evaluateExpression, formatResult, ... };

@@ -348,7 +348,7 @@ describe('Calculator Functions', () => {
     });
 });
 
-const { evaluateExpression } = require('./calculator');
+const { evaluateExpression, formatResult } = require('./calculator');
 
 describe('evaluateExpression', () => {
     // Basic operations and whitespace
