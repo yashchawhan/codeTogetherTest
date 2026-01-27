@@ -1,13 +1,20 @@
-import { TodoService } from './services/TodoService'
-import { TodoRepositoryImpl, TodoDataJsonSourceImpl } from './repository/TodoJsonRepository'
+import express from 'express'
+import { TodoDataJsonSourceImpl, TodoRepositoryImpl } from './repository/TodoJsonRepository';
+import { TodoService } from './services/TodoService';
+import { TodoController } from './controller/TodoController';
 
 const main = async () => {
     const repository = new TodoRepositoryImpl(new TodoDataJsonSourceImpl())
-    const todoService = new TodoService(repository);
-    const todos = await todoService.getTodos();
-    console.log('Todo List:');
-    todos.forEach((todo, index) => {
-        console.log(`${index + 1}. ${todo.title} - ${todo.completed ? 'Completed' : 'Pending'}`);
+    const todoService = new TodoService(repository)
+    const todoController = new TodoController(todoService)
+
+    const app = express();
+    const port = 3000;
+
+    todoController.registerRoutes(app)
+
+    app.listen(port, () => {
+        console.log(`Server is running at http://localhost:${port}`);
     });
 }
 
