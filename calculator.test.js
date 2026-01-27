@@ -409,4 +409,38 @@ describe('evaluateExpression', () => {
     it('throws on empty input', () => {
         expect(() => evaluateExpression('')).toThrow();
     });
+    it('throws on empty string', () => {
+        expect(() => evaluateExpression('')).toThrow('Expression is empty');
+    });
+    it('throws on whitespace-only string', () => {
+        expect(() => evaluateExpression('   \t\n')).toThrow('Expression is empty');
+    });
+    it('throws on malformed decimals: "1..2"', () => {
+        expect(() => evaluateExpression('1..2 + 3')).toThrow('Malformed decimal number');
+    });
+    it('throws on malformed decimals: "."', () => {
+        expect(() => evaluateExpression('.')).toThrow('Malformed decimal number');
+    });
+    it('throws on malformed decimals: ".."', () => {
+        expect(() => evaluateExpression('..')).toThrow('Malformed decimal number');
+    });
+    it('throws on invalid operator sequence: "1++2"', () => {
+        expect(() => evaluateExpression('1++2')).toThrow('Invalid operator sequence');
+    });
+    it('throws on invalid operator sequence: "**"', () => {
+        expect(() => evaluateExpression('2**2')).toThrow('Invalid operator sequence');
+    });
+    it('throws on invalid operator sequence: "//"', () => {
+        expect(() => evaluateExpression('4//2')).toThrow('Invalid operator sequence');
+    });
+    it('throws on mismatched parentheses: too many closing )', () => {
+        expect(() => evaluateExpression('1 + 2)')).toThrow('Mismatched parentheses');
+    });
+    it('throws on mismatched parentheses: too many opening (', () => {
+        expect(() => evaluateExpression('((1 + 2)')).toThrow('Mismatched parentheses');
+    });
+    it('throws on very long input', () => {
+        const longExpr = '1+'.repeat(4096) + '1';
+        expect(() => evaluateExpression(longExpr)).toThrow('Expression exceeds maximum length');
+    });
 });
