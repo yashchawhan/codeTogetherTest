@@ -4,8 +4,11 @@
     "module": "CommonJS",
     "outDir": "dist",
     "rootDir": "src",
+    "sourceMap": true,
+    "inlineSources": true,
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts"]
 }
