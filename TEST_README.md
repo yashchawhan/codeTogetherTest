@@ -87,3 +87,8 @@ All 26 tests should pass with 100% coverage of calculator functions.
 - Negative results
 - Consecutive operations
 - Decimal number operations
+
+## Notes
+This is the space to add some notes, new project, new space, new workflow
+The notes must containd the default standards of the company
+
