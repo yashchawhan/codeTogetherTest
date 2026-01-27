@@ -29,6 +29,7 @@ function validateInput(expr) {
 /**
  * Converts the input string into an array of tokens (numbers, operators, parentheses).
  * Handles tricky cases like malformed decimals and unary minus.
+ * Unary minus is detected if '-' is at the start or after an operator or '('.
  */
 export function tokenize(expr) {
     const tokens = [];
@@ -75,6 +76,7 @@ export function tokenize(expr) {
 
 /**
  * Checks for invalid operator sequences and mismatched parentheses.
+ * Parentheses are counted to ensure balance.
  */
 function validateTokenSequence(tokens) {
     let last = null;
@@ -98,6 +100,8 @@ function validateTokenSequence(tokens) {
 /**
  * Converts tokens to Reverse Polish Notation (RPN) using the Shunting Yard algorithm.
  * Handles operator precedence and parentheses.
+ * Precedence: * and / > + and -
+ * Parentheses are pushed/popped to control precedence.
  */
 export function toRPN(tokens) {
     const output = [];
@@ -144,8 +148,11 @@ export function toRPN(tokens) {
     return output;
 }
 
-// Evaluate the RPN expression
-function evalRPN(rpn) {
+/**
+ * Evaluates an RPN token array and returns the result.
+ * Throws on division by zero and malformed expressions.
+ */
+export function evalRPN(rpn) {
     const stack = [];
     for (const token of rpn) {
         if (token.type === 'number') {
