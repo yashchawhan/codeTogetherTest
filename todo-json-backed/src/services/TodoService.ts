@@ -1,11 +1,18 @@
+
+import { TodoDTO } from '../model/todo-dto'
+import * as path from 'path'
+
+export interface ITodoRepository {
+    getTodos(): Promise<TodoDTO[]>
+}
+
 export class TodoService {
 
-    constructor() {
+    constructor(private repository: ITodoRepository) {
         // do nothing
     }
 
-    public getTodos(): string[] {
-        return ['Buy groceries', 'Walk the dog', 'Read a book'];
+    public getTodos(): Promise<TodoDTO[]> {
+        return this.repository.getTodos()
     }
-
 }

@@ -1,11 +1,13 @@
-import { TodoService } from './services/TodoService';
+import { TodoService } from './services/TodoService'
+import { TodoRepositoryImpl, TodoDataJsonSourceImpl } from './repository/TodoJsonRepository'
 
-const main = () => {
-    const todoService = new TodoService();
-    const todos = todoService.getTodos();
+const main = async () => {
+    const repository = new TodoRepositoryImpl(new TodoDataJsonSourceImpl())
+    const todoService = new TodoService(repository);
+    const todos = await todoService.getTodos();
     console.log('Todo List:');
     todos.forEach((todo, index) => {
-        console.log(`${index + 1}. ${todo}`);
+        console.log(`${index + 1}. ${todo.title} - ${todo.completed ? 'Completed' : 'Pending'}`);
     });
 }
 
