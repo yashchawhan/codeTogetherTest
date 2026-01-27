@@ -196,9 +196,14 @@
     <div class="calculator" style="margin-top: 30px;">
         <h2>Expression Evaluator</h2>
         <input id="expr-input" type="text" placeholder="Enter expression" style="width: 100%; font-size: 1.1em; margin-bottom: 10px;">
+        <div style="margin-bottom: 10px;">
+            <label for="max-decimals" style="font-size: 0.95em;">Max decimals:</label>
+            <input id="max-decimals" type="number" min="0" max="15" value="6" style="width: 3em; font-size: 1em;">
+        </div>
         <button id="eval-btn" style="width: 49%; margin-bottom: 10px;">Evaluate</button>
         <button id="clear-btn" style="width: 49%; margin-bottom: 10px;">Clear</button>
-        <div id="expr-result" class="display" style="margin-bottom: 10px; min-height: 2em; color: #00ff00;">Result: </div>
+        <div id="expr-result" class="display" style="margin-bottom: 4px; min-height: 2em; color: #00ff00;">Result: </div>
+        <div id="expr-raw" style="font-size: 0.9em; color: #aaa; margin-bottom: 10px;"></div>
         <div>
             <strong>History</strong>
             <ul id="history-list" style="padding-left: 20px; max-height: 150px; overflow-y: auto; cursor: pointer;"></ul>
@@ -206,26 +211,56 @@
     </div>
 
     <script type="module">
-        import { evaluateExpression } from './calculator.js';
+        import { evaluateExpression, formatResult } from './calculator.js';
 
         const input = document.getElementById('expr-input');
         const btn = document.getElementById('eval-btn');
         const clearBtn = document.getElementById('clear-btn');
         const result = document.getElementById('expr-result');
+        const raw = document.getElementById('expr-raw');
         const historyList = document.getElementById('history-list');
+        const maxDecimalsInput = document.getElementById('max-decimals');
         let history = [];
+        let lastValue = null; // last raw value (number)
+        let lastError = null; // last error message
+
+        function getMaxDecimals() {
+            let n = parseInt(maxDecimalsInput.value, 10);
+            if (isNaN(n) || n < 0) n = 6;
+            if (n > 15) n = 15;
+            return n;
+        }
+
+        function renderResult() {
+            if (lastError) {
+                result.textContent = 'Error: ' + lastError;
+                result.style.color = '#ff4444';
+                raw.textContent = '';
+            } else if (lastValue !== null) {
+                const formatted = formatResult(lastValue, { maxDecimals: getMaxDecimals() });
+                result.textContent = 'Result: ' + formatted;
+                result.style.color = '#00ff00';
+                raw.textContent = '(Raw: ' + lastValue + ')';
+            } else {
+                result.textContent = 'Result: ';
+                result.style.color = '#00ff00';
+                raw.textContent = '';
+            }
+        }
 
         function evaluateAndDisplay() {
             const expr = input.value.trim();
             if (!expr) return;
             try {
                 const val = evaluateExpression(expr);
-                result.textContent = 'Result: ' + val;
-                result.style.color = '#00ff00';
-                addToHistory(expr, val);
+                lastValue = val;
+                lastError = null;
+                renderResult();
+                addToHistory(expr, formatResult(val, { maxDecimals: getMaxDecimals() }));
             } catch (e) {
-                result.textContent = 'Error: ' + e.message;
-                result.style.color = '#ff4444';
+                lastValue = null;
+                lastError = e.message;
+                renderResult();
                 addToHistory(expr, 'Error');
             }
         }
@@ -240,10 +275,17 @@
 
         clearBtn.addEventListener('click', () => {
             input.value = '';
-            result.textContent = 'Result: ';
-            result.style.color = '#00ff00';
+            lastValue = null;
+            lastError = null;
+            renderResult();
             history = [];
             renderHistory();
+        });
+
+        maxDecimalsInput.addEventListener('input', () => {
+            if (lastValue !== null || lastError) {
+                renderResult();
+            }
         });
 
         function addToHistory(expr, val) {
@@ -265,6 +307,9 @@
                 historyList.appendChild(li);
             }
         }
+
+        // Initial render
+        renderResult();
     </script>
 </body>
 </html>

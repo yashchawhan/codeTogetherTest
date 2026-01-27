@@ -444,3 +444,46 @@ describe('evaluateExpression', () => {
         expect(() => evaluateExpression(longExpr)).toThrow('Expression exceeds maximum length');
     });
 });
+
+import { formatResult } from './calculator.js';
+
+describe('formatResult', () => {
+    it('returns integers as integers', () => {
+        expect(formatResult(5)).toBe('5');
+        expect(formatResult(-42)).toBe('-42');
+    });
+
+    it('rounds to 6 decimals by default', () => {
+        expect(formatResult(1 / 3)).toBe('0.333333');
+        expect(formatResult(2 / 7)).toBe('0.285714');
+    });
+
+    it('trims trailing zeros', () => {
+        expect(formatResult(2.500000)).toBe('2.5');
+        expect(formatResult(3.140000)).toBe('3.14');
+        expect(formatResult(10.000000)).toBe('10');
+    });
+
+    it('returns integers without decimal even if rounded', () => {
+        expect(formatResult(2.000000)).toBe('2');
+    });
+
+    it('respects configurable maxDecimals', () => {
+        expect(formatResult(1 / 3, { maxDecimals: 2 })).toBe('0.33');
+        expect(formatResult(Math.PI, { maxDecimals: 4 })).toBe('3.1416');
+    });
+
+    it('avoids scientific notation for typical values', () => {
+        expect(formatResult(1234567.89)).toBe('1234567.89');
+    });
+
+    it('handles -0 as "0"', () => {
+        expect(formatResult(-0)).toBe('0');
+    });
+
+    it('returns string for non-finite values', () => {
+        expect(formatResult(Infinity)).toBe('Infinity');
+        expect(formatResult(-Infinity)).toBe('-Infinity');
+        expect(formatResult(NaN)).toBe('NaN');
+    });
+});
