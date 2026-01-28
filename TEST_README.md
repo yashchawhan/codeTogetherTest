@@ -65,13 +65,47 @@ npm run test:watch
 
 # Run tests with coverage report
 npm run test:coverage
+
+# Run a single test file
+npx jest calculator.test.js
 ```
 
 ## Test Framework
 - **Jest** - JavaScript testing framework
 
-## Expected Test Results
-All 26 tests should pass with 100% coverage of calculator functions.
+## Supported Expression Examples
+
+- `1 + 2 * 3`
+- `(1 + 2) * 3`
+- `0.5 + 1.25`
+- `-5 + 2`
+- `-(2 + 3)`
+- `1 / 3`
+- `2.5 * -4`
+- `((1 + 2) * (3 - 4)) / 5`
+
+## Common Error Examples
+
+- **Expression is empty**  
+  The input was blank or only whitespace.
+
+- **Malformed decimal number**  
+  The input contains an invalid number format, e.g. `1..2`, `.`, or `..`.
+
+- **Invalid operator sequence: "++"**  
+  Two operators in a row, e.g. `1++2`, `2**2`, or `4//2`.
+
+- **Mismatched parentheses: too many closing )**  
+  There are more closing than opening parentheses, e.g. `1 + 2)`.
+
+- **Mismatched parentheses: too many opening (**  
+  There are more opening than closing parentheses, e.g. `((1 + 2)`.
+
+- **Division by zero**  
+  Attempted to divide by zero, e.g. `5 / 0`.
+
+- **Expression exceeds maximum length of 4096 characters**  
+  The input is too long.
 
 ## Functions Tested
 1. **appendNumber(num)** - Adds numbers to the current input

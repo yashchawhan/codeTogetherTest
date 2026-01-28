@@ -108,10 +108,12 @@ function parseAST(tokens) {
 
     // Parse with precedence: lowest (add/sub) to highest (unary, parens)
     function parseExpression() {
+        // Handles + and - (lowest precedence)
         return parseAddSub();
     }
 
     function parseAddSub() {
+        // Handles * and / (higher precedence than + and -)
         let node = parseMulDiv();
         while (peek() && peek().type === 'operator' && (peek().value === '+' || peek().value === '-')) {
             const op = consume().value;
@@ -122,6 +124,7 @@ function parseAST(tokens) {
     }
 
     function parseMulDiv() {
+        // Handles unary minus and parentheses (highest precedence)
         let node = parseUnary();
         while (peek() && peek().type === 'operator' && (peek().value === '*' || peek().value === '/')) {
             const op = consume().value;
@@ -132,6 +135,7 @@ function parseAST(tokens) {
     }
 
     // Handles unary minus for any valid subexpression (number, parenthesis, or another unary)
+    // Examples: "-5", "-(2+3)", "1*-2", "--5"
     function parseUnary() {
         if (peek() && peek().type === 'operator' && peek().value === '-') {
             consume();
@@ -225,5 +229,3 @@ function parseError(e) {
     if (e instanceof Error) return e;
     return new Error(typeof e === 'string' ? e : 'Invalid expression');
 }
-
-module.exports = { evaluateExpression, formatResult, ... };
