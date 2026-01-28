@@ -2,22 +2,33 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals'
 import express from 'express'
 import { Server } from 'http'
 import { TodoService } from '../src/services/TodoService'
-import { TodoRepositoryImpl, TodoDataJsonSourceImpl } from '../src/repository/TodoJsonRepository'
+import { TodoSqliteRepository } from '../src/repository/TodoSqliteRepository'
 import { TodoController } from '../src/controller/TodoController'
 import { AxiosTodoRepository } from '../src/client/AxiosTodoRepository'
+import * as fs from 'fs'
 import * as path from 'path'
 
-const TEST_PORT = 3001
-
-describe('AxiosTodoRepository', () => {
+describe('AxiosTodoRepository with SQLite backend', () => {
     let server: Server
     let axiosService: TodoService
+    let sqliteRepository: TodoSqliteRepository
+    const TEST_PORT = 3002
+    const testDbPath = path.join(__dirname, '../data-test/axios-sqlite-test.db')
 
     beforeAll(async () => {
-        // Start a test server with test data
-        const testDataPath = path.join(__dirname, '../data-test')
-        const repository = new TodoRepositoryImpl(new TodoDataJsonSourceImpl(testDataPath))
-        const serverService = new TodoService(repository)
+        // Ensure test directory exists
+        const dir = path.dirname(testDbPath)
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true })
+        }
+        // Remove existing test database
+        if (fs.existsSync(testDbPath)) {
+            fs.unlinkSync(testDbPath)
+        }
+
+        // Start a test server with SQLite backend
+        sqliteRepository = new TodoSqliteRepository(testDbPath)
+        const serverService = new TodoService(sqliteRepository)
         const controller = new TodoController(serverService)
 
         const app = express()
@@ -35,51 +46,47 @@ describe('AxiosTodoRepository', () => {
         await new Promise<void>((resolve) => {
             server.close(() => resolve())
         })
+        sqliteRepository.close()
+        // Clean up test database
+        if (fs.existsSync(testDbPath)) {
+            fs.unlinkSync(testDbPath)
+        }
     })
 
-    it('should get todos via HTTP', async () => {
+    it('should get todos via HTTP from SQLite backend', async () => {
         const todos = await axiosService.getTodos()
         expect(Array.isArray(todos)).toBe(true)
-        expect(todos.length).toBeGreaterThan(0)
     })
 
-    it('should add a todo via HTTP', async () => {
-        const newTodo = await axiosService.addTodo('Axios Test Todo')
+    it('should add a todo via HTTP to SQLite backend', async () => {
+        const newTodo = await axiosService.addTodo('Axios SQLite Test')
 
-        expect(newTodo.title).toBe('Axios Test Todo')
+        expect(newTodo.title).toBe('Axios SQLite Test')
         expect(newTodo.completed).toBe(false)
         expect(newTodo.id).toBeDefined()
 
-        // Clean up
-        await axiosService.removeTodo(newTodo.id)
+        // Verify it's in the database
+        const todos = await axiosService.getTodos()
+        expect(todos.find(t => t.id === newTodo.id)).toBeDefined()
     })
 
-    it('should mark a todo as completed via HTTP', async () => {
-        // Create a todo
-        const newTodo = await axiosService.addTodo('Complete Me')
+    it('should mark a todo as completed via HTTP in SQLite backend', async () => {
+        const newTodo = await axiosService.addTodo('Complete Me SQLite')
 
-        // Mark as completed
         await axiosService.markTodoAsCompleted(newTodo.id)
 
-        // Verify
         const todos = await axiosService.getTodos()
         const updated = todos.find(t => t.id === newTodo.id)
         expect(updated?.completed).toBe(true)
-
-        // Clean up
-        await axiosService.removeTodo(newTodo.id)
     })
 
-    it('should remove a todo via HTTP', async () => {
-        // Create a todo
-        const newTodo = await axiosService.addTodo('Delete Me')
+    it('should remove a todo via HTTP from SQLite backend', async () => {
+        const newTodo = await axiosService.addTodo('Delete Me SQLite')
         const todosAfterAdd = await axiosService.getTodos()
         const countAfterAdd = todosAfterAdd.length
 
-        // Remove it
         await axiosService.removeTodo(newTodo.id)
 
-        // Verify
         const todosAfterRemove = await axiosService.getTodos()
         expect(todosAfterRemove.length).toBe(countAfterAdd - 1)
         expect(todosAfterRemove.find(t => t.id === newTodo.id)).toBeUndefined()
