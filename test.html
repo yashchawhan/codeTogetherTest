@@ -210,6 +210,23 @@
         </div>
     </div>
 
+    <!-- Add this help section just above the Expression Evaluator div -->
+    <div style="max-width: 300px; margin: 30px auto 0 auto; background: #f8f8ff; border-radius: 8px; padding: 12px 16px; font-size: 0.98em; color: #333;">
+        <strong>Expression Help</strong>
+        <ul style="margin: 8px 0 8px 18px; padding: 0;">
+            <li>1 + 2 * 3</li>
+            <li>(1 + 2) * 3</li>
+            <li>-5 + 2</li>
+            <li>-(2 + 3)</li>
+            <li>0.5 + 1.25</li>
+            <li>2.5 * -4</li>
+        </ul>
+        <div>
+            <span>Supported operators: <b>+</b>, <b>-</b>, <b>*</b>, <b>/</b></span><br>
+            <span>Parentheses and whitespace are allowed.</span>
+        </div>
+    </div>
+
     <script type="module">
         import { evaluateExpression, formatResult } from './calculator.js';
 
