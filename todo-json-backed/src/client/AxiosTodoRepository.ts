@@ -3,7 +3,11 @@ import { TodoDTO } from '../model/todo-dto'
 import { ITodoRepository } from '../services/TodoService'
 
 export class AxiosTodoRepository implements ITodoRepository {
-    private readonly baseUrl = 'http://localhost:3000'
+    private readonly baseUrl: string
+
+    constructor(baseUrl: string = 'http://localhost:3000') {
+        this.baseUrl = baseUrl
+    }
 
     async getTodos(): Promise<TodoDTO[]> {
         const response = await axios.get<TodoDTO[]>(`${this.baseUrl}/todos`)

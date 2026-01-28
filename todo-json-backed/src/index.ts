@@ -1,10 +1,10 @@
 import express from 'express'
-import { TodoDataJsonSourceImpl, TodoRepositoryImpl } from './repository/TodoJsonRepository';
+import { TodoSqliteRepository } from './repository/TodoSqliteRepository';
 import { TodoService } from './services/TodoService';
 import { TodoController } from './controller/TodoController';
 
 const main = async () => {
-    const repository = new TodoRepositoryImpl(new TodoDataJsonSourceImpl())
+    const repository = new TodoSqliteRepository()
     const todoService = new TodoService(repository)
     const todoController = new TodoController(todoService)
 
