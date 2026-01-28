@@ -1,29 +1,34 @@
-import axios from 'axios'
+import axios, { AxiosInstance } from 'axios'
 import { TodoDTO } from '../model/todo-dto'
 import { ITodoRepository } from '../services/TodoService'
 
 export class AxiosTodoRepository implements ITodoRepository {
-    private readonly baseUrl: string
+    private readonly client: AxiosInstance
 
     constructor(baseUrl: string = 'http://localhost:3000') {
-        this.baseUrl = baseUrl
+        this.client = axios.create({
+            baseURL: baseUrl,
+            headers: {
+                'Authorization': 'Bearer secret'
+            }
+        })
     }
 
     async getTodos(): Promise<TodoDTO[]> {
-        const response = await axios.get<TodoDTO[]>(`${this.baseUrl}/todos`)
+        const response = await this.client.get<TodoDTO[]>('/todos')
         return response.data
     }
 
     async addTodo(title: string): Promise<TodoDTO> {
-        const response = await axios.post<TodoDTO>(`${this.baseUrl}/todos`, { title })
+        const response = await this.client.post<TodoDTO>('/todos', { title })
         return response.data
     }
 
     async markTodoAsCompleted(id: string): Promise<void> {
-        await axios.post(`${this.baseUrl}/todos/${id}/complete`)
+        await this.client.post(`/todos/${id}/complete`)
     }
 
     async removeTodo(id: string): Promise<void> {
-        await axios.delete(`${this.baseUrl}/todos/${id}`)
+        await this.client.delete(`/todos/${id}`)
     }
 }

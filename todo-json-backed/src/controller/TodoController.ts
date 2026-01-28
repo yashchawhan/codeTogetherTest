@@ -7,11 +7,20 @@ export class TodoController {
         // do nothing
     }
 
+    private authMiddleware(req: express.Request, res: express.Response, next: express.NextFunction): void {
+        const authHeader = req.headers.authorization
+        if (authHeader !== 'Bearer secret') {
+            res.status(401).json({ error: 'Unauthorized' })
+            return
+        }
+        next()
+    }
+
     public registerRoutes(app: express.Express): void {
-        app.get('/todos', this.getTodos.bind(this))
-        app.post('/todos', express.json(), this.addTodo.bind(this))
-        app.post('/todos/:id/complete', this.markTodoAsCompleted.bind(this))
-        app.delete('/todos/:id', this.removeTodo.bind(this))
+        app.get('/todos', this.authMiddleware.bind(this), this.getTodos.bind(this))
+        app.post('/todos', this.authMiddleware.bind(this), express.json(), this.addTodo.bind(this))
+        app.post('/todos/:id/complete', this.authMiddleware.bind(this), this.markTodoAsCompleted.bind(this))
+        app.delete('/todos/:id', this.authMiddleware.bind(this), this.removeTodo.bind(this))
     }
 
     public async getTodos(req: express.Request, res: express.Response): Promise<void> {
