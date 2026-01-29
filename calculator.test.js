@@ -487,3 +487,7 @@ describe('formatResult', () => {
         expect(formatResult(NaN)).toBe('NaN');
     });
 });
+
+test('handles multiplication with unary minus', () => {
+  expect(evaluateExpression('1*-2')).toBe('-2');
+});
